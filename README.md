@@ -1,15 +1,17 @@
-# Docker DHI Demo — Migrating to Hardened Images
+# Docker DHI Demo
 
-This project demonstrates a side-by-side comparison of the official Docker Node image versus the DHI (Docker Hardened Images) equivalent. It shows what changes are needed to migrate a Node.js app to a hardened image and how to measure the security improvement using Docker Scout.
+This project shows how to migrate a Node.js app from the official Docker Node image to [Docker Hardened Images (DHI)](https://dhi.io) — minimal, security-focused images with a reduced attack surface and fewer CVEs.
 
-**What is DHI?** Docker Hardened Images from [dhi.io](https://dhi.io) are minimal, hardened base images with a reduced package footprint and fewer CVEs compared to official images.
+Two Dockerfiles are provided for comparison:
+- `Dockerfile` — uses the official `node:20.19.5-alpine3.22` image
+- `Dockerfile_dhi` — uses the hardened `dhi.io/node:20.19.5-alpine3.22` equivalent
 
 ---
 
 ## Prerequisites
 
-- **Docker Desktop** (includes Docker Scout)
-- **dhi.io account** (free tier required to pull DHI images)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Log in to dhi.io using your Docker account:
 
 ```bash
 docker login dhi.io
@@ -17,22 +19,7 @@ docker login dhi.io
 
 ---
 
-## Project Structure
-
-```
-.
-├── Dockerfile          # Uses official node:20.19.5-alpine3.22
-├── Dockerfile_dhi      # Uses dhi.io/node:20.19.5-alpine3.22
-├── compose.yaml        # Runs full stack: Node.js app + PostgreSQL
-├── index.js            # Guestbook API server
-├── package.json
-└── db/
-    └── password.txt    # Database password (demo use only)
-```
-
----
-
-## Running the App
+## Run the app
 
 ```bash
 docker compose up --build
@@ -42,48 +29,30 @@ App available at: http://localhost:5001
 
 ---
 
-## Build and Compare Images
+## Compare the images with Docker Scout
 
-Build both images, then use Docker Scout to compare them:
+Build both images and use Docker Scout to compare them:
 
 ```bash
-# Build official image
 docker build -t guestbook:official .
-
-# Build DHI image
 docker build -f Dockerfile_dhi -t guestbook:dhi .
 
-# Compare with Docker Scout
 docker scout compare guestbook:dhi --to guestbook:official
 ```
 
-### What to look for in Scout output
-
-| Metric | What it shows |
-|--------|---------------|
-| **Package count** | DHI images ship with far fewer OS packages |
-| **Image size** | Typically smaller with DHI due to reduced footprint |
-| **CVE count** | Fewer vulnerabilities due to reduced attack surface |
+Scout will show the difference in:
+- **CVE count** — fewer vulnerabilities in the hardened image
+- **Attack surface** — fewer packages means less exposure
 
 ---
 
-## Key Difference Between the Two Dockerfiles
+## What changed between the two Dockerfiles
 
-The only change needed to migrate from official to DHI:
+Only the base images are different:
 
 | Stage | Official | DHI |
 |-------|----------|-----|
-| Build | `FROM node:20.19.5-alpine3.22` | `FROM dhi.io/node:20.19.5-alpine3.22-dev` |
-| Production | `FROM node:20.19.5-alpine3.22` | `FROM dhi.io/node:20.19.5-alpine3.22` |
+| Build | `node:20.19.5-alpine3.22` | `dhi.io/node:20.19.5-alpine3.22-dev` |
+| Production | `node:20.19.5-alpine3.22` | `dhi.io/node:20.19.5-alpine3.22` |
 
-> **Note:** DHI uses a `-dev` variant for the build stage (includes npm and package manager tools) and a minimal variant for the final production image.
-
----
-
-## App Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/` | Web UI |
-| GET | `/api/entries` | List all guestbook entries (JSON) |
-| POST | `/api/entries` | Add entry — body: `{"name": "...", "message": "..."}` |
+The `-dev` variant is used in the build stage because it includes npm. The production stage uses the minimal hardened image.
