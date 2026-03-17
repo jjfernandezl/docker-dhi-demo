@@ -1,0 +1,27 @@
+# Stage 1: Build stage
+FROM dhi.io/node:20.19.5-alpine3.22-dev AS build
+
+WORKDIR /usr/src/app
+
+# Copy package files first to leverage Docker cache
+COPY package-lock.json package.json ./
+
+# Install production dependencies only
+RUN npm install && \
+npm cache clean --force
+
+# Copy the rest of the application files
+COPY ./index.js .
+
+# Stage 2: Production stage
+FROM dhi.io/node:20.19.5-alpine3.22 AS production
+
+WORKDIR /usr/src/app
+
+COPY --from=build /usr/src/app/package.json ./
+COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/index.js ./index.js
+
+EXPOSE 5000
+
+CMD ["node", "index.js"]
