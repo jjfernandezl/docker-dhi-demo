@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM node:20.19.5-alpine3.22 AS build
+FROM demonstrationorg/dhi-node:22.23.1-alpine3.24-dev AS build
 
 WORKDIR /usr/src/app
 
@@ -7,14 +7,14 @@ WORKDIR /usr/src/app
 COPY package-lock.json package.json ./
 
 # Install production dependencies only
-RUN npm install && \
+RUN npm install --omit=dev && \
 npm cache clean --force
 
 # Copy the rest of the application files
 COPY ./index.js .
 
 # Stage 2: Production stage
-FROM node:20.19.5-alpine3.22 AS production
+FROM demonstrationorg/dhi-node:22.23.1-alpine3.24 AS production
 
 WORKDIR /usr/src/app
 
